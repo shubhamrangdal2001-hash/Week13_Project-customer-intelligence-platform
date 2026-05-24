@@ -1,0 +1,32 @@
+FROM python:3.11-slim AS base
+
+# ── System dependencies ────────────────────────────────────────────────────
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git curl build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+# Install heavy ML deps (torch, transformers, sentence-transformers, faiss)
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ── Application code ───────────────────────────────────────────────────────
+COPY services/rag/ ./services/rag/
+COPY monitoring/ ./monitoring/
+
+# Complaint data and RAG index are mounted as volumes at runtime
+# so we only create placeholder dirs here
+RUN mkdir -p /app/data/complaints /app/rag/index /app/rag/llm
+
+# ── Security: run as non-root ──────────────────────────────────────────────
+RUN useradd -m appuser && chown -R appuser /app
+USER appuser
+
+EXPOSE 8001
+
+# ── Start service ──────────────────────────────────────────────────────────
+CMD ["uvicorn", "services.rag.main:app", \
+     "--host", "0.0.0.0", "--port", "8001", \
+     "--log-level", "info", \
+     "--timeout-keep-alive", "120"]
