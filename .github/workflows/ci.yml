@@ -23,14 +23,22 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pandera
         
-    - name: Run Unit Tests
+    - name: Generate Sample Data
       run: |
-        pytest tests/ -v
+        python scripts/generate_sample_data.py
         
     - name: Run Data Validation
       run: |
         python scripts/validate_data.py
         
+    - name: Train ML Model
+      run: |
+        python services/conversion/train.py
+        
     - name: Run Integration Checks
       run: |
         python scripts/verify.py
+        
+    - name: Run Unit Tests
+      run: |
+        pytest tests/ -v
