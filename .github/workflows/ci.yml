@@ -50,7 +50,8 @@ jobs:
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git checkout -b debug-logs
-        git add -A
-        git commit -m "Commit debug logs from failed run"
-        git push origin debug-logs --force
+        git pull origin main --rebase || true
+        git add verify_output.log || true
+        git add pytest_output.log || true
+        git commit -m "Commit debug logs from failed run [skip ci]" || true
+        git push origin main
