@@ -239,6 +239,13 @@ class RAGEngine:
         q_vec = self._embedder.encode([query])
         faiss.normalize_L2(q_vec)
         scores, indices = self._index.search(q_vec, top_k)
+        
+        SIMILARITY_THRESHOLD = 0.35
+        if len(scores) == 0 or len(scores[0]) == 0 or scores[0][0] < SIMILARITY_THRESHOLD:
+            log.warning("RAG Refusal: Top similarity score %.4f is below threshold %.4f", 
+                        scores[0][0] if len(scores[0]) else 0, SIMILARITY_THRESHOLD)
+            return []
+            
         results = [self._chunks[i] for i in indices[0] if i < len(self._chunks)]
         return results
 
@@ -253,6 +260,12 @@ class RAGEngine:
         import torch
 
         context_chunks = self.retrieve(query, top_k=top_k)
+        if not context_chunks:
+            return RAGResponse(
+                answer="I'm sorry, but I do not have enough relevant historical complaints to answer this question accurately. Please rephrase or provide more details.",
+                sources=[]
+            )
+            
         context_text = "\n\n".join(
             f"[{c.source_file}] {c.text}" for c in context_chunks
         )
