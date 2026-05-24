@@ -32,7 +32,7 @@ A robust, full-stack Customer Intelligence Platform built for Week 13. This plat
 graph TD
     Client[Client Application / API Consumer]
     
-    subrange API Gateway
+    subgraph "API Gateway"
         Nginx[Nginx Reverse Proxy / Load Balancer]
     end
 
