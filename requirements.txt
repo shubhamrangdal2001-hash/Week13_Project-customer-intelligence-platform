@@ -11,3 +11,5 @@ faiss-cpu==1.7.4
 azure-cli==2.60.0
 opentelemetry-sdk==1.22.0
 opentelemetry-exporter-otlp==1.22.0
+
+pandera==0.18.3
