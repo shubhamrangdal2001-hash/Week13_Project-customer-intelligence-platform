@@ -1,20 +1,28 @@
 # Customer Intelligence Platform
 
-A dual-service Customer Intelligence Platform featuring XGBoost-based campaign conversion prediction and a Llama2-powered RAG engine for automated complaint resolution, built with FastAPI and Docker.
+A robust, full-stack Customer Intelligence Platform built for Week 13. This platform features an **XGBoost-based campaign conversion prediction ML service** and a **FAISS/LLaMA-2 powered Retrieval-Augmented Generation (RAG) engine** for automated complaint resolution. Both services are fully containerized with Docker and orchestrated via FastAPI.
 
-## Quick Summaries
+## Key Features & Requirement Fulfillment
 
-### Architecture
-The platform is orchestrated via Docker Compose, hosting two isolated FastAPI microservices. Nginx (or similar gateway) routes traffic to the Conversion and RAG APIs, while Azure Application Insights collects real-time telemetry from both services.
+### 1. Robust Machine Learning Pipeline (Conversion)
+- **Data Validation (`scripts/validate_data.py`)**: Uses `pandera` to enforce strict schemas, check missing values, and validate 5+ business rules before training.
+- **Baseline vs. XGBoost Promotion Gate (`services/conversion/train.py`)**: Evaluates a Logistic Regression baseline against XGBoost using ROC-AUC and PR-AUC. The model is only serialized if XGBoost rigorously outperforms the baseline.
+- **ML Data Drift Monitoring (`scripts/generate_drift_report.py`)**: Automated script to detect statistical drift (using Kolmogorov-Smirnov tests) between training and production distributions, outputting to `monitoring/drift_report.json`.
 
-### Machine Learning Model (Conversion)
-We utilize an **XGBoost Classifier** to predict the probability of a contact converting into a customer based on historical engagement and demographic data. It achieved an **ROC-AUC of 0.9069** and **F1 Score of 0.9924**. The model and its preprocessing schemas (LabelEncoders) are packaged into a single pickle artifact to guarantee parity between training and inference.
+### 2. Comprehensive APIs (`services/conversion/main.py`)
+- **`POST /predict`**: Single inference endpoint with strict Pydantic validation.
+- **`POST /batch-score`**: Efficient bulk scoring for multiple contacts simultaneously.
+- **`POST /customer-intel`**: A unified intelligence endpoint that returns the ML conversion band (High/Medium/Low) alongside synthesized top complaint themes with cited evidence IDs.
 
-### Complaint Intelligence (RAG)
-The Retrieval-Augmented Generation pipeline uses **FAISS** for rapid vector similarity search, mapping natural language queries to historical complaint logs embedded via `sentence-transformers`. The retrieved context is synthesized by a **LLaMA-2** model to provide concise, factual resolutions to customer support queries without hallucination.
+### 3. Complaint Intelligence RAG (`services/rag/`)
+- **FAISS & Sentence-Transformers**: Local, ultra-fast vector index for semantic search.
+- **Refusal Logic**: Implements a strict similarity distance threshold. If retrieved context is weak, the model explicitly refuses to hallucinate an answer.
+- **Automated Eval (`scripts/eval_rag.py`)**: Test suite evaluating the model's ability to answer in-domain questions and correctly refuse out-of-domain questions.
 
-### Monitoring & Deployment
-Deployment is automated for **Azure App Services** utilizing multi-container configuration. Monitoring is deeply integrated using the `opencensus-ext-azure` package, streaming API latencies, errors, and custom ML/RAG metrics directly to **Azure Application Insights**.
+### 4. CI/CD & Cloud Infrastructure
+- **GitHub Actions (`.github/workflows/ci.yml`)**: Continuous integration pipeline that enforces unit tests and data validation on every push.
+- **Azure Monitoring**: Deep `opencensus-ext-azure` integration capturing custom telemetry, errors, and traces.
+- **Docker Compose**: One-click local orchestration of both microservices.
 
 ---
 
@@ -30,8 +38,13 @@ graph TD
 
     subgraph "Conversion Service (FastAPI)"
         ConvAPI[POST /predict]
+        BatchAPI[POST /batch-score]
+        IntelAPI[POST /customer-intel]
         XGB[XGBoost Model]
+        
         ConvAPI --> XGB
+        BatchAPI --> XGB
+        IntelAPI --> XGB
     end
 
     subgraph "Complaint Intelligence Service (FastAPI)"
@@ -47,24 +60,43 @@ graph TD
     end
 
     Client -->|HTTP Requests| Nginx
-    Nginx -->|Route: /conversion| ConvAPI
-    Nginx -->|Route: /rag| RAGAPI
+    Nginx --> ConvAPI
+    Nginx --> BatchAPI
+    Nginx --> IntelAPI
+    Nginx --> RAGAPI
     
-    ConvAPI -.->|Telemetry & Logs| AzureMonitor
-    RAGAPI -.->|Telemetry & Logs| AzureMonitor
+    ConvAPI -.->|Telemetry| AzureMonitor
+    RAGAPI -.->|Telemetry| AzureMonitor
 
     classDef service fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
     classDef datastore fill:#fff3e0,stroke:#e65100,stroke-width:2px;
     classDef monitor fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
     
-    class ConvAPI,RAGAPI service;
+    class ConvAPI,BatchAPI,IntelAPI,RAGAPI service;
     class FAISS,XGB datastore;
     class AzureMonitor monitor;
 ```
 
 ## Detailed Documentation
-Please check the `docs/` directory for full technical reports:
+Please review the `docs/` directory for full technical reports justifying these architectural decisions:
+- [Comparative Analysis](docs/comparative_analysis.md)
 - [Architecture](docs/architecture.md)
 - [ML Model Report](docs/model_report.md)
 - [RAG Report](docs/rag_report.md)
 - [Monitoring Report](docs/monitoring_report.md)
+
+## Quick Start
+
+1. Generate Sample Data:
+```bash
+python scripts/generate_sample_data.py
+```
+2. Validate & Train Model:
+```bash
+python scripts/validate_data.py
+python services/conversion/train.py
+```
+3. Run Services:
+```bash
+docker-compose up --build
+```
