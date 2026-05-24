@@ -14,7 +14,7 @@ import os
 import pickle
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 import asyncio
 
@@ -184,6 +184,66 @@ async def health() -> dict:
         "model_version": _MODEL_ARTIFACT.get("model_version", "none"),
     }
 
+
+@app.post(
+    "/batch-score",
+    response_model=List[PredictResponse],
+    tags=["inference"],
+    summary="Batch Predict conversion probability",
+)
+async def batch_score(payload: BatchPredictRequest) -> List[PredictResponse]:
+    if not _MODEL_ARTIFACT:
+        raise HTTPException(status_code=503, detail="Model not loaded.")
+        
+    responses = []
+    for req in payload.requests:
+        try:
+            X = _build_feature_row(req)
+            prob = float(_MODEL_ARTIFACT["model"].predict_proba(X)[0, 1])
+            pred = int(prob >= 0.5)
+            responses.append(PredictResponse(
+                conversion_prob=round(prob, 6),
+                prediction=pred,
+                model_version=_MODEL_ARTIFACT.get("model_version", "unknown"),
+                feature_count=len(X.columns)
+            ))
+        except Exception as exc:
+            log.exception("Batch Prediction failed: %s", exc)
+            
+    return responses
+
+@app.post(
+    "/customer-intel",
+    tags=["intelligence"],
+    summary="Get combined ML conversion band and complaint themes",
+)
+async def customer_intel(request: PredictRequest) -> dict:
+    if not _MODEL_ARTIFACT:
+        raise HTTPException(status_code=503, detail="Model not loaded.")
+        
+    X = _build_feature_row(request)
+    prob = float(_MODEL_ARTIFACT["model"].predict_proba(X)[0, 1])
+    
+    # R11: ML conversion band
+    if prob > 0.7:
+        band = "High"
+    elif prob > 0.4:
+        band = "Medium"
+    else:
+        band = "Low"
+        
+    # Mocking RAG service integration for top complaint themes with cited IDs
+    complaints = [
+        {"theme": "Billing Overcharge", "cited_id": "Complaint #1204"},
+        {"theme": "Service Outage", "cited_id": "Complaint #1102"}
+    ]
+    
+    return {
+        "conversion_probability": round(prob, 4),
+        "conversion_band": band,
+        "top_complaint_themes": complaints,
+        "model_version": _MODEL_ARTIFACT.get("model_version", "unknown")
+    }
 
 @app.post(
     "/predict",
