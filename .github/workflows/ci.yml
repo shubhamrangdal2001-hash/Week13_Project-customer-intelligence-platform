@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
     
@@ -37,8 +39,18 @@ jobs:
         
     - name: Run Integration Checks
       run: |
-        python scripts/verify.py
+        python scripts/verify.py > verify_output.log 2>&1 || (cat verify_output.log && exit 1)
         
     - name: Run Unit Tests
       run: |
-        pytest tests/ -v
+        pytest tests/ -v > pytest_output.log 2>&1 || (cat pytest_output.log && exit 1)
+
+    - name: Commit logs on failure
+      if: failure()
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git checkout -b debug-logs
+        git add -A
+        git commit -m "Commit debug logs from failed run"
+        git push origin debug-logs --force
