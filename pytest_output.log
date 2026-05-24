@@ -1,0 +1,201 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.3, pluggy-1.6.0 -- /opt/hostedtoolcache/Python/3.11.15/x64/bin/python
+cachedir: .pytest_cache
+rootdir: /home/runner/work/Week13_Project-customer-intelligence-platform/Week13_Project-customer-intelligence-platform
+configfile: pytest.ini
+plugins: typeguard-4.5.2, anyio-4.13.0
+collecting ... collected 19 items
+
+tests/test_conversion.py::TestArtifactStructure::test_artifact_keys PASSED [  5%]
+tests/test_conversion.py::TestArtifactStructure::test_artifact_roundtrip PASSED [ 10%]
+tests/test_conversion.py::TestArtifactStructure::test_label_encoders_work PASSED [ 15%]
+tests/test_conversion.py::TestArtifactStructure::test_mock_model_predicts PASSED [ 21%]
+tests/test_conversion.py::TestFeatureEngineering::test_engineer_features_shape PASSED [ 26%]
+tests/test_conversion.py::TestFeatureEngineering::test_engineer_features_no_nulls PASSED [ 31%]
+tests/test_conversion.py::TestFeatureEngineering::test_load_data_reads_csv PASSED [ 36%]
+tests/test_conversion.py::TestConversionEndpoints::test_health_ok PASSED [ 42%]
+tests/test_conversion.py::TestConversionEndpoints::test_predict_full_payload PASSED [ 47%]
+tests/test_conversion.py::TestConversionEndpoints::test_predict_minimal_payload PASSED [ 52%]
+tests/test_conversion.py::TestConversionEndpoints::test_root_redirect PASSED [ 57%]
+tests/test_rag.py::TestRAGEngine::test_index_built ERROR                 [ 63%]
+tests/test_rag.py::TestRAGEngine::test_retrieve_returns_chunks ERROR     [ 68%]
+tests/test_rag.py::TestRAGEngine::test_answer_returns_response ERROR     [ 73%]
+tests/test_rag.py::TestRAGEngine::test_sources_have_required_fields ERROR [ 78%]
+tests/test_rag.py::TestRAGEngine::test_chunk_text_splits_correctly ERROR [ 84%]
+tests/test_rag.py::TestRAGEndpoints::test_health_check FAILED            [ 89%]
+tests/test_rag.py::TestRAGEndpoints::test_answer_endpoint FAILED         [ 94%]
+tests/test_rag.py::TestRAGEndpoints::test_short_query_rejected PASSED    [100%]
+
+==================================== ERRORS ====================================
+_______________ ERROR at setup of TestRAGEngine.test_index_built _______________
+tests/test_rag.py:86: in patch_paths_and_llm
+    self.engine = eng.RAGEngine.get()
+                  ^^^^^^^^^^^^^^^^^^^
+services/rag/rag_engine.py:231: in get
+    cls._instance = cls()
+                    ^^^^^
+services/rag/rag_engine.py:225: in __init__
+    self._chunks, self._index, self._embedder = build_index()
+                                                ^^^^^^^^^^^^^
+services/rag/rag_engine.py:134: in build_index
+    from sentence_transformers import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/__init__.py:3: in <module>
+    from .datasets import SentencesDataset, ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/__init__.py:3: in <module>
+    from .ParallelSentencesDataset import ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/ParallelSentencesDataset.py:4: in <module>
+    from .. import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/SentenceTransformer.py:12: in <module>
+    from huggingface_hub import HfApi, HfFolder, Repository, hf_hub_url, cached_download
+E   ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+_________ ERROR at setup of TestRAGEngine.test_retrieve_returns_chunks _________
+tests/test_rag.py:86: in patch_paths_and_llm
+    self.engine = eng.RAGEngine.get()
+                  ^^^^^^^^^^^^^^^^^^^
+services/rag/rag_engine.py:231: in get
+    cls._instance = cls()
+                    ^^^^^
+services/rag/rag_engine.py:225: in __init__
+    self._chunks, self._index, self._embedder = build_index()
+                                                ^^^^^^^^^^^^^
+services/rag/rag_engine.py:134: in build_index
+    from sentence_transformers import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/__init__.py:3: in <module>
+    from .datasets import SentencesDataset, ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/__init__.py:3: in <module>
+    from .ParallelSentencesDataset import ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/ParallelSentencesDataset.py:4: in <module>
+    from .. import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/SentenceTransformer.py:12: in <module>
+    from huggingface_hub import HfApi, HfFolder, Repository, hf_hub_url, cached_download
+E   ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+_________ ERROR at setup of TestRAGEngine.test_answer_returns_response _________
+tests/test_rag.py:86: in patch_paths_and_llm
+    self.engine = eng.RAGEngine.get()
+                  ^^^^^^^^^^^^^^^^^^^
+services/rag/rag_engine.py:231: in get
+    cls._instance = cls()
+                    ^^^^^
+services/rag/rag_engine.py:225: in __init__
+    self._chunks, self._index, self._embedder = build_index()
+                                                ^^^^^^^^^^^^^
+services/rag/rag_engine.py:134: in build_index
+    from sentence_transformers import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/__init__.py:3: in <module>
+    from .datasets import SentencesDataset, ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/__init__.py:3: in <module>
+    from .ParallelSentencesDataset import ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/ParallelSentencesDataset.py:4: in <module>
+    from .. import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/SentenceTransformer.py:12: in <module>
+    from huggingface_hub import HfApi, HfFolder, Repository, hf_hub_url, cached_download
+E   ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+______ ERROR at setup of TestRAGEngine.test_sources_have_required_fields _______
+tests/test_rag.py:86: in patch_paths_and_llm
+    self.engine = eng.RAGEngine.get()
+                  ^^^^^^^^^^^^^^^^^^^
+services/rag/rag_engine.py:231: in get
+    cls._instance = cls()
+                    ^^^^^
+services/rag/rag_engine.py:225: in __init__
+    self._chunks, self._index, self._embedder = build_index()
+                                                ^^^^^^^^^^^^^
+services/rag/rag_engine.py:134: in build_index
+    from sentence_transformers import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/__init__.py:3: in <module>
+    from .datasets import SentencesDataset, ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/__init__.py:3: in <module>
+    from .ParallelSentencesDataset import ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/ParallelSentencesDataset.py:4: in <module>
+    from .. import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/SentenceTransformer.py:12: in <module>
+    from huggingface_hub import HfApi, HfFolder, Repository, hf_hub_url, cached_download
+E   ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+_______ ERROR at setup of TestRAGEngine.test_chunk_text_splits_correctly _______
+tests/test_rag.py:86: in patch_paths_and_llm
+    self.engine = eng.RAGEngine.get()
+                  ^^^^^^^^^^^^^^^^^^^
+services/rag/rag_engine.py:231: in get
+    cls._instance = cls()
+                    ^^^^^
+services/rag/rag_engine.py:225: in __init__
+    self._chunks, self._index, self._embedder = build_index()
+                                                ^^^^^^^^^^^^^
+services/rag/rag_engine.py:134: in build_index
+    from sentence_transformers import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/__init__.py:3: in <module>
+    from .datasets import SentencesDataset, ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/__init__.py:3: in <module>
+    from .ParallelSentencesDataset import ParallelSentencesDataset
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/datasets/ParallelSentencesDataset.py:4: in <module>
+    from .. import SentenceTransformer
+/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/sentence_transformers/SentenceTransformer.py:12: in <module>
+    from huggingface_hub import HfApi, HfFolder, Repository, hf_hub_url, cached_download
+E   ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+=================================== FAILURES ===================================
+______________________ TestRAGEndpoints.test_health_check ______________________
+tests/test_rag.py:164: in test_health_check
+    assert data["status"] == "ok"
+E   assert "degraded: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)" == 'ok'
+E     
+E     - ok
+E     + degraded: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+____________________ TestRAGEndpoints.test_answer_endpoint _____________________
+tests/test_rag.py:168: in test_answer_endpoint
+    assert resp.status_code == 200
+E   assert 503 == 200
+E    +  where 503 = <Response [503 Service Unavailable]>.status_code
+=============================== warnings summary ===============================
+tests/test_conversion.py: 44 warnings
+tests/test_rag.py: 4 warnings
+  /opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/pydantic/fields.py:754: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.6/migration/
+    warn(
+
+tests/test_conversion.py::TestConversionEndpoints::test_health_ok
+tests/test_conversion.py::TestConversionEndpoints::test_predict_full_payload
+tests/test_conversion.py::TestConversionEndpoints::test_predict_minimal_payload
+tests/test_conversion.py::TestConversionEndpoints::test_root_redirect
+  /opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/pydantic/_internal/_config.py:272: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.6/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/test_conversion.py::TestConversionEndpoints::test_health_ok
+tests/test_conversion.py::TestConversionEndpoints::test_predict_full_payload
+tests/test_conversion.py::TestConversionEndpoints::test_predict_minimal_payload
+tests/test_conversion.py::TestConversionEndpoints::test_root_redirect
+  /opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/pydantic/_internal/_fields.py:151: UserWarning: Field "model_version" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+tests/test_conversion.py::TestConversionEndpoints::test_health_ok
+tests/test_conversion.py::TestConversionEndpoints::test_predict_full_payload
+tests/test_conversion.py::TestConversionEndpoints::test_predict_minimal_payload
+tests/test_conversion.py::TestConversionEndpoints::test_root_redirect
+tests/test_rag.py::TestRAGEndpoints::test_health_check
+tests/test_rag.py::TestRAGEndpoints::test_answer_endpoint
+tests/test_rag.py::TestRAGEndpoints::test_short_query_rejected
+  /opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/httpx/_client.py:690: DeprecationWarning: The 'app' shortcut is now deprecated. Use the explicit style 'transport=WSGITransport(app=...)' instead.
+    warnings.warn(message, DeprecationWarning)
+
+tests/test_rag.py::TestRAGEngine::test_index_built
+  /opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/faiss/loader.py:28: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(numpy.__version__) >= "1.19":
+
+tests/test_rag.py::TestRAGEngine::test_index_built
+  /opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/setuptools/_distutils/version.py:336: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    other = LooseVersion(other)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_rag.py::TestRAGEndpoints::test_health_check - assert "degraded: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)" == 'ok'
+  
+  - ok
+  + degraded: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+FAILED tests/test_rag.py::TestRAGEndpoints::test_answer_endpoint - assert 503 == 200
+ +  where 503 = <Response [503 Service Unavailable]>.status_code
+ERROR tests/test_rag.py::TestRAGEngine::test_index_built - ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+ERROR tests/test_rag.py::TestRAGEngine::test_retrieve_returns_chunks - ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+ERROR tests/test_rag.py::TestRAGEngine::test_answer_returns_response - ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+ERROR tests/test_rag.py::TestRAGEngine::test_sources_have_required_fields - ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+ERROR tests/test_rag.py::TestRAGEngine::test_chunk_text_splits_correctly - ImportError: cannot import name 'cached_download' from 'huggingface_hub' (/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/huggingface_hub/__init__.py)
+============= 2 failed, 12 passed, 65 warnings, 5 errors in 4.18s ==============

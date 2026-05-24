@@ -2,6 +2,12 @@
 
 You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
   warnings.warn(
+2026-05-24 18:07:39  INFO      Loading model from /home/runner/work/Week13_Project-customer-intelligence-platform/Week13_Project-customer-intelligence-platform/models/conversion_model.pkl (this may take a moment)…
+2026-05-24 18:07:39  INFO      Loaded model version=v1.1  features=['age', 'income', 'num_campaigns', 'num_clicks', 'num_opens', 'recency_days', 'tenure_days', 'gender', 'channel', 'product_category', 'region']
+2026-05-24 18:07:39  INFO      HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2026-05-24 18:07:39  INFO      HTTP Request: POST http://testserver/predict "HTTP/1.1 200 OK"
+2026-05-24 18:07:39  INFO      HTTP Request: POST http://testserver/predict "HTTP/1.1 200 OK"
+2026-05-24 18:07:39  INFO      HTTP Request: GET http://testserver/ "HTTP/1.1 200 OK"
 
 [1/5] Importing scientific stack…
       numpy, pandas, sklearn  OK
@@ -25,10 +31,16 @@ You may be able to resolve this warning by setting `model_config['protected_name
   [OK]  stratified train/test split works on 20 rows
 
   [API Endpoints]
-Traceback (most recent call last):
-  File "/home/runner/work/Week13_Project-customer-intelligence-platform/Week13_Project-customer-intelligence-platform/scripts/verify.py", line 220, in <module>
-    client = TestClient(_main_mod.app, raise_server_exceptions=True)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.11.15/x64/lib/python3.11/site-packages/starlette/testclient.py", line 429, in __init__
-    super().__init__(
-TypeError: Client.__init__() got an unexpected keyword argument 'app'
+  [OK]  GET /health returns 200 ok
+  [OK]  POST /predict full payload -> 200
+  [OK]  POST /predict minimal payload -> 200
+  [OK]  GET / returns service info
+
+  [Trained Model Metrics]
+       ROC-AUC=0.8908629441624365  F1=0.9924433249370277
+  [OK]  real trained model metrics >= 0.7
+
+============================================================
+  Results: 13/13 passed  -  ALL PASSED OK
+============================================================
+
