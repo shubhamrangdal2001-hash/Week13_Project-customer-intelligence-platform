@@ -53,11 +53,14 @@ def _make_encoders():
     return encoders
 
 
+class MockXGBoostModel:
+    def predict_proba(self, X):
+        return np.array([[0.3, 0.7]] * len(X))
+
+
 def _make_mock_model():
     """A lightweight sklearn-compatible mock that always predicts 0.7 probability."""
-    model = MagicMock()
-    model.predict_proba.return_value = np.array([[0.3, 0.7]])
-    return model
+    return MockXGBoostModel()
 
 
 def _make_artifact(tmp_path: Path) -> tuple[Path, dict]:
@@ -207,7 +210,9 @@ class TestConversionEndpoints:
                 del sys.modules["services.conversion.main"]
             import services.conversion.main as mod
             with patch.object(mod, "MODEL_PATH", artifact_path):
-                self.client = TestClient(mod.app, raise_server_exceptions=True)
+                with TestClient(mod.app, raise_server_exceptions=True) as client:
+                    self.client = client
+                    yield
 
     def test_health_ok(self):
         resp = self.client.get("/health")

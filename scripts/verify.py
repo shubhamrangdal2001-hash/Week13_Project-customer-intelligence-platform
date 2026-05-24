@@ -165,7 +165,7 @@ def _test_pickle_roundtrip():
         loaded = pickle.load(fh)
     assert "model_version" in loaded
     assert "feature_columns" in loaded
-    assert loaded["model_version"] == "v1.0"
+    assert loaded["model_version"] == "v1.1"
 check("real artifact pickle round-trip", _test_pickle_roundtrip)
 
 def _test_label_encoders():

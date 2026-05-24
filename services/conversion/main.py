@@ -126,6 +126,10 @@ class PredictRequest(BaseModel):
         extra = "allow"  # Accept additional fields without error
 
 
+class BatchPredictRequest(BaseModel):
+    requests: List[PredictRequest]
+
+
 class PredictResponse(BaseModel):
     conversion_prob: float = Field(..., description="Probability of conversion [0, 1]")
     prediction: int = Field(..., description="Binary prediction (1=convert, 0=not)")

@@ -20,6 +20,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
+class MockBatchEncoding(dict):
+    def to(self, device):
+        return self
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers to build mock complaints documents
 # ─────────────────────────────────────────────────────────────────────────────
@@ -60,7 +65,7 @@ class TestRAGEngine:
 
         # Mock tokenizer and model
         mock_tokenizer = MagicMock()
-        mock_tokenizer.return_value = {"input_ids": MagicMock(shape=[1, 10])}
+        mock_tokenizer.return_value = MockBatchEncoding({"input_ids": MagicMock(shape=[1, 10])})
         mock_tokenizer.decode.return_value = "This is a mocked answer about billing."
         mock_tokenizer.eos_token_id = 2
 
@@ -125,7 +130,7 @@ class TestRAGEndpoints:
         index_dir.mkdir(parents=True)
 
         mock_tokenizer = MagicMock()
-        mock_tokenizer.return_value = {"input_ids": MagicMock(shape=[1, 10])}
+        mock_tokenizer.return_value = MockBatchEncoding({"input_ids": MagicMock(shape=[1, 10])})
         mock_tokenizer.decode.return_value = "Mocked answer: billing issues detected."
         mock_tokenizer.eos_token_id = 2
 
