@@ -11,11 +11,11 @@
 set -euo pipefail
 
 # ─── Configuration ────────────────────────────────────────────────────────────
-RESOURCE_GROUP="${RESOURCE_GROUP:-weel13-rg}"
-LOCATION="${LOCATION:-eastus}"
-ACR_NAME="${ACR_NAME:-weel13acr}"          # must be globally unique in Azure
-APP_PLAN="${APP_PLAN:-weel13-plan}"
-APP_NAME="${APP_NAME:-weel13-app}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-cip-rg-13}"
+LOCATION="${LOCATION:-centralindia}"
+ACR_NAME="${ACR_NAME:-cipregistry13}"          # must be globally unique in Azure
+APP_PLAN="${APP_PLAN:-cip-plan}"
+APP_NAME="${APP_NAME:-cip-app-13}"
 APP_PLAN_SKU="${APP_PLAN_SKU:-S1}"          # S1 = 1 vCPU, 1.75 GB RAM
 
 # Image tags
@@ -26,21 +26,14 @@ RAG_IMAGE="weel13-rag:latest"
 info()  { echo -e "\033[1;34m[INFO]\033[0m  $*"; }
 error() { echo -e "\033[1;31m[ERR ]\033[0m  $*" >&2; exit 1; }
 
-# ─── 1. Build Docker images ───────────────────────────────────────────────────
-info "Building conversion service image…"
-docker build -f docker/Dockerfile.conversion -t "$CONVERSION_IMAGE" .
-
-info "Building RAG service image…"
-docker build -f docker/Dockerfile.rag -t "$RAG_IMAGE" .
-
-# ─── 2. Create Azure resource group ──────────────────────────────────────────
+# ─── 1. Create Azure resource group ──────────────────────────────────────────
 info "Creating resource group '$RESOURCE_GROUP' in '$LOCATION'…"
 az group create \
   --name  "$RESOURCE_GROUP" \
   --location "$LOCATION" \
   --output none
 
-# ─── 3. Create Azure Container Registry ──────────────────────────────────────
+# ─── 2. Create Azure Container Registry ──────────────────────────────────────
 info "Creating ACR '$ACR_NAME'…"
 az acr create \
   --resource-group "$RESOURCE_GROUP" \
@@ -59,19 +52,8 @@ ACR_PASSWORD=$(az acr credential show \
   --query "passwords[0].value" \
   --output tsv)
 
-# ─── 4. Push images to ACR ───────────────────────────────────────────────────
-info "Logging into ACR…"
-docker login "$ACR_LOGIN_SERVER" \
-  --username "$ACR_NAME" \
-  --password "$ACR_PASSWORD"
-
-info "Pushing conversion image…"
-docker tag "$CONVERSION_IMAGE" "$ACR_LOGIN_SERVER/$CONVERSION_IMAGE"
-docker push "$ACR_LOGIN_SERVER/$CONVERSION_IMAGE"
-
-info "Pushing RAG image…"
-docker tag "$RAG_IMAGE" "$ACR_LOGIN_SERVER/$RAG_IMAGE"
-docker push "$ACR_LOGIN_SERVER/$RAG_IMAGE"
+# ─── 3. Cloud Container Build Notification ───────────────────────────────────
+info "Cloud-based ACR building is disabled by subscription policy. Containers will be built via GitHub Actions."
 
 # ─── 5. Create App Service Plan (Linux) ──────────────────────────────────────
 info "Creating App Service plan '$APP_PLAN' (SKU=$APP_PLAN_SKU)…"
@@ -100,12 +82,17 @@ services:
       - "8001:8001"
     environment:
       - SERVICE_NAME=rag-service
-      - LLM_MODEL_NAME=/app/rag/llm
+      - LLM_MODEL_NAME=TinyLlama/TinyLlama-1.1B-Chat-v1.0
+      - EMBED_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+      - CHUNK_SIZE=400
+      - CHUNK_OVERLAP=50
+      - TOP_K=5
+      - MAX_NEW_TOKENS=512
       - APPLICATIONINSIGHTS_CONNECTION_STRING=\${APPLICATIONINSIGHTS_CONNECTION_STRING}
 EOF
 )
 
-COMPOSE_FILE_PATH="/tmp/weel13_azure_compose.yml"
+COMPOSE_FILE_PATH="weel13_azure_compose.yml"
 echo "$COMPOSE_YAML" > "$COMPOSE_FILE_PATH"
 
 # ─── 7. Create the multi-container Web App ────────────────────────────────────
@@ -128,12 +115,24 @@ az webapp config container set \
   --docker-registry-server-password "$ACR_PASSWORD" \
   --output none
 
-# ─── 9. Stream public URL ─────────────────────────────────────────────────────
+# ─── 9. Enable CD and get Webhook URL ─────────────────────────────────────────
+info "Enabling Continuous Deployment on Web App…"
+CD_WEBHOOK_URL=$(az webapp deployment container config \
+  --name "$APP_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --enable-cd true \
+  --query CI_CD_URL \
+  --output tsv)
+
+# ─── 10. Stream public URL ─────────────────────────────────────────────────────
 APP_URL=$(az webapp show \
   --name "$APP_NAME" \
   --resource-group "$RESOURCE_GROUP" \
   --query defaultHostName \
   --output tsv)
+
+# Clean up local temp compose file
+rm -f "$COMPOSE_FILE_PATH"
 
 info "Deployment complete!"
 echo ""
@@ -142,5 +141,9 @@ echo "  RAG endpoint        : https://${APP_URL}:8001/answer"
 echo "  Swagger (conversion): https://${APP_URL}:8000/docs"
 echo "  Swagger (RAG)       : https://${APP_URL}:8001/docs"
 echo ""
-echo "Set the following environment variable for Azure Monitor telemetry:"
-echo "  APPLICATIONINSIGHTS_CONNECTION_STRING=<your-connection-string>"
+echo "============================================================================="
+echo "  CREDENTIALS FOR GITHUB ACTIONS WORKFLOW"
+echo "============================================================================="
+echo "  ACR_PASSWORD   : ${ACR_PASSWORD}"
+echo "  CD_WEBHOOK_URL : ${CD_WEBHOOK_URL}"
+echo "============================================================================="
