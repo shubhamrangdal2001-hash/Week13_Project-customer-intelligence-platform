@@ -108,7 +108,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Restart Conversion Web App (pull latest image)
+      - name: Configure Conversion Web App container
         run: |
           az webapp config container set \
             --name ${{ env.CONVERSION_APP }} \
@@ -117,6 +117,18 @@ jobs:
             --docker-registry-server-url https://${{ env.ACR_LOGIN_SERVER }} \
             --docker-registry-server-user ${{ env.ACR_USERNAME }} \
             --docker-registry-server-password "${{ github.event.inputs.acr_password }}"
+
+      - name: Set Conversion App environment variables
+        run: |
+          az webapp config appsettings set \
+            --name ${{ env.CONVERSION_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings \
+              SERVICE_NAME=conversion-service \
+              WEBSITES_PORT=8000
+
+      - name: Restart Conversion Web App
+        run: |
           az webapp restart \
             --name ${{ env.CONVERSION_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }}
