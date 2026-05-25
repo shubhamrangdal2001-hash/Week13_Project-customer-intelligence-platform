@@ -147,7 +147,7 @@ st.markdown("""
         flex-wrap: wrap;
     }
 </style>
-""", unsafe_html=True)
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Sidebar Settings & Navigation
@@ -220,7 +220,7 @@ if page == "🔮 Conversion Profiler":
         <h1 class="header-title">🔮 Customer Conversion Profiler</h1>
         <p class="header-subtitle">Analyze marketing features, score conversion probabilities, and view synthesized complaint profiles using our XGBoost Conversion service.</p>
     </div>
-    """, unsafe_html=True)
+    """, unsafe_allow_html=True)
     
     # Presets Buttons
     st.subheader("Select a Demo Profile Preset:")
@@ -314,14 +314,14 @@ if page == "🔮 Conversion Profiler":
                                 <div class="metric-label">Predicted Probability</div>
                                 <div class="metric-value" style="color: #1e293b;">{prob:.2%}</div>
                             </div>
-                            """, unsafe_html=True)
+                            """, unsafe_allow_html=True)
                         with col_card2:
                             st.markdown(f"""
                             <div class="metric-card {band_class}">
                                 <div class="metric-label">Conversion Band</div>
                                 <div class="metric-value">{band}</div>
                             </div>
-                            """, unsafe_html=True)
+                            """, unsafe_allow_html=True)
 
                         # Plotly Gauge Chart
                         fig = go.Figure(go.Indicator(
@@ -360,7 +360,7 @@ if page == "🔮 Conversion Profiler":
                                     <span style="font-weight: 600; color: #334155;">⚠️ {theme['theme']}</span>
                                     <span style="font-size: 0.85rem; color: #64748b; font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{theme['cited_id']}</span>
                                 </div>
-                                """, unsafe_html=True)
+                                """, unsafe_allow_html=True)
                         else:
                             st.write("No active complaint logs found for similar demographics.")
 
@@ -390,7 +390,7 @@ elif page == "💬 RAG Resolution Assistant":
         <h1 class="header-title">💬 Complaint Intelligence RAG</h1>
         <p class="header-subtitle">Search historical complaints and resolve issues using an interactive LLaMA-2 backed QA assistant with citation transparency.</p>
     </div>
-    """, unsafe_html=True)
+    """, unsafe_allow_html=True)
 
     # Preset/Suggested queries
     st.subheader("💡 Suggested Queries:")
@@ -434,7 +434,7 @@ elif page == "💬 RAG Resolution Assistant":
                         <div style="background-color: #eff6ff; padding: 1.5rem; border-radius: 12px; border: 1px solid #bfdbfe; color: #1e3a8a; margin-bottom: 2rem; line-height: 1.6;">
                             {answer}
                         </div>
-                        """, unsafe_html=True)
+                        """, unsafe_allow_html=True)
                         
                         # Render Citations / Sources
                         st.subheader("📄 Grounded Sources / Citations")
@@ -446,7 +446,7 @@ elif page == "💬 RAG Resolution Assistant":
                                         <div class="source-header">File: {src['source_file']}</div>
                                         <div class="source-snippet">"{src['snippet']}"</div>
                                     </div>
-                                    """, unsafe_html=True)
+                                    """, unsafe_allow_html=True)
                         else:
                             st.info("⚠️ No sources cited. The system generated this answer independently, or it is a refusal due to low similarity scores.")
                             
@@ -468,7 +468,7 @@ else:
         <h1 class="header-title">📊 Service Health & Telemetry</h1>
         <p class="header-subtitle">Monitor microservice uptime, check model versions, and verify active configurations across the platform.</p>
     </div>
-    """, unsafe_html=True)
+    """, unsafe_allow_html=True)
 
     # Perform health checks
     status_data = []
@@ -566,7 +566,7 @@ else:
                 </div>
             </div>
         </div>
-        """, unsafe_html=True)
+        """, unsafe_allow_html=True)
 
     # General configuration report
     st.markdown("---")
