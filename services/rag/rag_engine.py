@@ -44,7 +44,7 @@ CHUNKS_PATH = INDEX_DIR / "chunks.pkl"
 # ---------------------------------------------------------------------------
 # Config (overridable via environment variables)
 # ---------------------------------------------------------------------------
-LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", str(LLM_DIR))  # local path or HF hub id
+LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")  # local path or HF hub id
 EMBED_MODEL_NAME: str = os.getenv(
     "EMBED_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2"
 )
@@ -192,18 +192,58 @@ def load_llm():
     Load Llama 2 (or any causal LM) from *LLM_DIR* or HuggingFace Hub.
     Falls back gracefully if the checkpoint is not present.
     """
+    if LLM_MODEL_NAME.lower() == "mock":
+        log.info("Loading MOCK LLM for local development...")
+        class MockBatchEncoding(dict):
+            def to(self, device):
+                return self
+                
+        class MockTokenizer:
+            def __init__(self):
+                self.eos_token_id = 2
+            def __call__(self, text, *args, **kwargs):
+                import torch
+                return MockBatchEncoding({
+                    "input_ids": torch.zeros((1, 10), dtype=torch.long),
+                    "attention_mask": torch.ones((1, 10), dtype=torch.long)
+                })
+            def decode(self, tokens, *args, **kwargs):
+                return (
+                    "Grounded Mock Answer: Based on the retrieved complaints context, "
+                    "customers report issues regarding billing overcharges and subscription renewals."
+                )
+
+        class MockModel:
+            def __init__(self):
+                self.device = "cpu"
+            def generate(self, *args, **kwargs):
+                import torch
+                return torch.zeros((1, 20), dtype=torch.long)
+            def eval(self):
+                pass
+                
+        return MockTokenizer(), MockModel()
+
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     model_path = str(LLM_DIR) if (LLM_DIR / "config.json").exists() else LLM_MODEL_NAME
     log.info("Loading LLM from '%s'…", model_path)
 
+    import torch
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path,
-        device_map="auto",        # uses GPU if available, else CPU
-        torch_dtype="auto",
-        low_cpu_mem_usage=True,
-    )
+    if torch.cuda.is_available():
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            device_map="auto",        # uses GPU if available
+            torch_dtype="auto",
+            low_cpu_mem_usage=True,
+        )
+    else:
+        log.info("CUDA not available; loading LLM directly to CPU.")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            torch_dtype=torch.float32,
+        )
     model.eval()
     log.info("LLM loaded.")
     return tokenizer, model
