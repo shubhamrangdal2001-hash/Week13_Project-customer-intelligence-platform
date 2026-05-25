@@ -194,7 +194,7 @@ def load_llm():
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    model_path = str(LLM_DIR) if (LLM_DIR.exists() and any(LLM_DIR.iterdir())) else LLM_MODEL_NAME
+    model_path = str(LLM_DIR) if (LLM_DIR / "config.json").exists() else LLM_MODEL_NAME
     log.info("Loading LLM from '%s'…", model_path)
 
     tokenizer = AutoTokenizer.from_pretrained(model_path)
