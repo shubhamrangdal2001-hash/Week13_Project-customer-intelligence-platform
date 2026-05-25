@@ -197,7 +197,7 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --settings \
               SERVICE_NAME=rag-service \
-              LLM_MODEL_NAME=TinyLlama/TinyLlama-1.1B-Chat-v1.0 \
+              LLM_MODEL_NAME=mock \
               EMBED_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2 \
               CHUNK_SIZE=400 \
               CHUNK_OVERLAP=50 \
