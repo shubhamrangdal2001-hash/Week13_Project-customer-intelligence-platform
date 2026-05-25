@@ -4,14 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       acr_password:
-        description: 'ACR Admin Password (from: az acr credential show -n cipregistry13)'
-        required: true
-  push:
-    branches: [main]
-    paths:
-      - 'services/**'
-      - 'docker/**'
-      - 'requirements.txt'
+        description: 'ACR Admin Password (leave blank to use ACR_PASSWORD secret)'
+        required: false
 
 env:
   ACR_LOGIN_SERVER: cipregistry13.azurecr.io
