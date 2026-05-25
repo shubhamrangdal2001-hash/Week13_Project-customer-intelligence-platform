@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,12 +74,17 @@ class TestRAGEngine:
         mock_model.device = "cpu"
         mock_model.generate.return_value = MagicMock()
 
+        # Mock SentenceTransformer embedder
+        mock_embedder = MagicMock()
+        mock_embedder.encode.side_effect = lambda sentences, **kwargs: np.array([[1.0] + [0.0]*383 for _ in sentences], dtype=np.float32)
+
         with (
             patch("services.rag.rag_engine.COMPLAINTS_DIR", complaints_dir),
             patch("services.rag.rag_engine.INDEX_DIR", index_dir),
             patch("services.rag.rag_engine.INDEX_PATH", index_dir / "faiss.index"),
             patch("services.rag.rag_engine.CHUNKS_PATH", index_dir / "chunks.pkl"),
             patch("services.rag.rag_engine.load_llm", return_value=(mock_tokenizer, mock_model)),
+            patch("sentence_transformers.SentenceTransformer", return_value=mock_embedder),
         ):
             # Reset the singleton between tests
             import services.rag.rag_engine as eng
@@ -138,12 +144,17 @@ class TestRAGEndpoints:
         mock_model.device = "cpu"
         mock_model.generate.return_value = MagicMock()
 
+        # Mock SentenceTransformer embedder
+        mock_embedder = MagicMock()
+        mock_embedder.encode.side_effect = lambda sentences, **kwargs: np.array([[1.0] + [0.0]*383 for _ in sentences], dtype=np.float32)
+
         with (
             patch("services.rag.rag_engine.COMPLAINTS_DIR", complaints_dir),
             patch("services.rag.rag_engine.INDEX_DIR", index_dir),
             patch("services.rag.rag_engine.INDEX_PATH", index_dir / "faiss.index"),
             patch("services.rag.rag_engine.CHUNKS_PATH", index_dir / "chunks.pkl"),
             patch("services.rag.rag_engine.load_llm", return_value=(mock_tokenizer, mock_model)),
+            patch("sentence_transformers.SentenceTransformer", return_value=mock_embedder),
         ):
             import services.rag.rag_engine as eng
             eng.RAGEngine._instance = None
