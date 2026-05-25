@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       acr_password:
-        description: 'ACR Admin Password (leave blank to use ACR_PASSWORD secret)'
-        required: false
+        description: 'ACR Admin Password — run: az acr credential show -n cipregistry13 --query passwords[0].value -o tsv'
+        required: true
 
 env:
   ACR_LOGIN_SERVER: cipregistry13.azurecr.io
@@ -52,7 +52,7 @@ jobs:
         with:
           login-server: ${{ env.ACR_LOGIN_SERVER }}
           username:     ${{ env.ACR_USERNAME }}
-          password:     ${{ github.event.inputs.acr_password || secrets.ACR_PASSWORD }}
+          password:     ${{ github.event.inputs.acr_password }}
 
       # ── Conversion image: listens on port 80 for Azure App Service ─────────
       - name: Build & Push Conversion Image
@@ -98,7 +98,7 @@ jobs:
             --docker-custom-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-conversion:latest \
             --docker-registry-server-url https://${{ env.ACR_LOGIN_SERVER }} \
             --docker-registry-server-user ${{ env.ACR_USERNAME }} \
-            --docker-registry-server-password "${{ github.event.inputs.acr_password || secrets.ACR_PASSWORD }}"
+            --docker-registry-server-password "${{ github.event.inputs.acr_password }}"
           az webapp restart \
             --name ${{ env.CONVERSION_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }}
@@ -143,7 +143,7 @@ jobs:
             --docker-custom-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:latest \
             --docker-registry-server-url https://${{ env.ACR_LOGIN_SERVER }} \
             --docker-registry-server-user ${{ env.ACR_USERNAME }} \
-            --docker-registry-server-password "${{ github.event.inputs.acr_password || secrets.ACR_PASSWORD }}"
+            --docker-registry-server-password "${{ github.event.inputs.acr_password }}"
 
       - name: Set RAG App environment variables
         run: |
