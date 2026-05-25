@@ -12,6 +12,7 @@ env:
   APP_PLAN:         cip-plan
   CONVERSION_APP:   cip-app-13
   RAG_APP:          cip-rag-13
+  FRONTEND_APP:     cip-frontend-13
   LOCATION:         centralindia
 
 jobs:
@@ -94,6 +95,17 @@ jobs:
             .
           docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:latest
           docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:${{ github.sha }}
+
+      # ── Frontend image ─────────────────────────────────────────────────────
+      - name: Build & Push Frontend Image
+        run: |
+          docker build \
+            -f docker/Dockerfile.frontend \
+            -t ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:latest \
+            -t ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:${{ github.sha }} \
+            .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:latest
+          docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:${{ github.sha }}
 
   # ──────────────────────────────────────────────────────────────────────────
   # 2. DEPLOY CONVERSION SERVICE  →  cip-app-13.azurewebsites.net
@@ -206,4 +218,53 @@ jobs:
             https://${{ env.RAG_APP }}.azurewebsites.net/health)
           echo "RAG /health HTTP status: $STATUS"
           [ "$STATUS" = "200" ] || echo "RAG still warming up – non-blocking"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 4. DEPLOY FRONTEND SERVICE  →  cip-frontend-13.azurewebsites.net
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Streamlit Frontend
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Frontend Web App (idempotent)
+        run: |
+          # Create the web app if it doesn't exist yet
+          az webapp create \
+            --name ${{ env.FRONTEND_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --plan ${{ env.APP_PLAN }} \
+            --deployment-container-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:latest \
+            2>/dev/null || true
+
+      - name: Configure Frontend Web App container
+        run: |
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_USERNAME }} --query "passwords[0].value" --output tsv)
+          az webapp config container set \
+            --name ${{ env.FRONTEND_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --docker-custom-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:latest \
+            --docker-registry-server-url https://${{ env.ACR_LOGIN_SERVER }} \
+            --docker-registry-server-user ${{ env.ACR_USERNAME }} \
+            --docker-registry-server-password "$ACR_PASSWORD"
+
+      - name: Set Frontend App environment variables
+        run: |
+          az webapp config appsettings set \
+            --name ${{ env.FRONTEND_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings \
+              WEBSITES_PORT=8501
+
+      - name: Restart Frontend Web App
+        run: |
+          az webapp restart \
+            --name ${{ env.FRONTEND_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
 
