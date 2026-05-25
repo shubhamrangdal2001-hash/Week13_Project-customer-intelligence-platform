@@ -159,7 +159,7 @@ st.sidebar.title("Configuration")
 env = st.sidebar.selectbox(
     "API Environment",
     ["Cloud (Azure)", "Local (Development)"],
-    index=0
+    index=1
 )
 
 # API URL setups
