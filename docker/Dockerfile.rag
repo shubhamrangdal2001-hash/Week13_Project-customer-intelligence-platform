@@ -14,10 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ── Application code ───────────────────────────────────────────────────────
 COPY services/rag/ ./services/rag/
 COPY monitoring/ ./monitoring/
+COPY data/complaints/ ./data/complaints/
 
-# Complaint data and RAG index are mounted as volumes at runtime
-# so we only create placeholder dirs here
-RUN mkdir -p /app/data/complaints /app/rag/index /app/rag/llm
+# RAG index and model directories are mounted as volumes at runtime (or download at startup)
+RUN mkdir -p /app/rag/index /app/rag/llm
 
 # ── Security: run as non-root ──────────────────────────────────────────────
 RUN useradd -m appuser && chown -R appuser /app
