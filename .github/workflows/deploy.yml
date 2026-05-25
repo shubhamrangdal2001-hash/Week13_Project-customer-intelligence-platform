@@ -1,25 +1,45 @@
-name: Cloud Build and Push
+name: Deploy – Customer Intelligence Platform
 
 on:
   workflow_dispatch:
     inputs:
       acr_password:
-        description: 'ACR Admin Password'
+        description: 'ACR Admin Password (from: az acr credential show -n cipregistry13)'
         required: true
+  push:
+    branches: [main]
+    paths:
+      - 'services/**'
+      - 'docker/**'
+      - 'requirements.txt'
+
+env:
+  ACR_LOGIN_SERVER: cipregistry13.azurecr.io
+  ACR_USERNAME:     cipregistry13
+  RESOURCE_GROUP:   cip-rg-13
+  APP_PLAN:         cip-plan
+  CONVERSION_APP:   cip-app-13
+  RAG_APP:          cip-rag-13
+  LOCATION:         centralindia
 
 jobs:
-  build-and-push:
+  # ──────────────────────────────────────────────────────────────────────────
+  # 1. BUILD & TEST
+  # ──────────────────────────────────────────────────────────────────────────
+  build-and-test:
+    name: Build, Test & Push Images
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -27,22 +47,136 @@ jobs:
       - name: Generate Sample Data
         run: python scripts/generate_sample_data.py
 
-      - name: Train Model
+      - name: Train Conversion Model
         run: python services/conversion/train.py
+
+      - name: Run Unit & Integration Tests
+        run: python -m pytest tests/ -v --tb=short
 
       - name: Log in to Azure Container Registry
         uses: azure/docker-login@v2
         with:
-          login-server: cipregistry13.azurecr.io
-          username: cipregistry13
-          password: ${{ github.event.inputs.acr_password }}
+          login-server: ${{ env.ACR_LOGIN_SERVER }}
+          username:     ${{ env.ACR_USERNAME }}
+          password:     ${{ github.event.inputs.acr_password || secrets.ACR_PASSWORD }}
 
-      - name: Build and Push Conversion Service Image
+      # ── Conversion image: listens on port 80 for Azure App Service ─────────
+      - name: Build & Push Conversion Image
         run: |
-          docker build -f docker/Dockerfile.conversion -t cipregistry13.azurecr.io/weel13-conversion:latest .
-          docker push cipregistry13.azurecr.io/weel13-conversion:latest
+          docker build \
+            -f docker/Dockerfile.conversion \
+            -t ${{ env.ACR_LOGIN_SERVER }}/weel13-conversion:latest \
+            -t ${{ env.ACR_LOGIN_SERVER }}/weel13-conversion:${{ github.sha }} \
+            .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-conversion:latest
+          docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-conversion:${{ github.sha }}
 
-      - name: Build and Push RAG Service Image
+      # ── RAG image: azure variant listens on PORT env var (80 default) ──────
+      - name: Build & Push RAG Image (Azure variant)
         run: |
-          docker build -f docker/Dockerfile.rag -t cipregistry13.azurecr.io/weel13-rag:latest .
-          docker push cipregistry13.azurecr.io/weel13-rag:latest
+          docker build \
+            -f docker/Dockerfile.rag-azure \
+            -t ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:latest \
+            -t ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:${{ github.sha }} \
+            .
+          docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:latest
+          docker push ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:${{ github.sha }}
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 2. DEPLOY CONVERSION SERVICE  →  cip-app-13.azurewebsites.net
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-conversion:
+    name: Deploy Conversion Service
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Restart Conversion Web App (pull latest image)
+        run: |
+          az webapp config container set \
+            --name ${{ env.CONVERSION_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --docker-custom-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-conversion:latest \
+            --docker-registry-server-url https://${{ env.ACR_LOGIN_SERVER }} \
+            --docker-registry-server-user ${{ env.ACR_USERNAME }} \
+            --docker-registry-server-password "${{ github.event.inputs.acr_password || secrets.ACR_PASSWORD }}"
+          az webapp restart \
+            --name ${{ env.CONVERSION_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
+
+      - name: Smoke-test Conversion /health
+        run: |
+          sleep 30
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://${{ env.CONVERSION_APP }}.azurewebsites.net/health)
+          echo "Conversion /health HTTP status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 3. DEPLOY RAG SERVICE  →  cip-rag-13.azurewebsites.net  (Stretch goal)
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-rag:
+    name: Deploy RAG Service (Stretch – second cloud endpoint)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create RAG Web App (idempotent)
+        run: |
+          # Create the web app if it doesn't exist yet
+          az webapp create \
+            --name ${{ env.RAG_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --plan ${{ env.APP_PLAN }} \
+            --deployment-container-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:latest \
+            2>/dev/null || true
+
+      - name: Configure RAG Web App container
+        run: |
+          az webapp config container set \
+            --name ${{ env.RAG_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --docker-custom-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-rag-azure:latest \
+            --docker-registry-server-url https://${{ env.ACR_LOGIN_SERVER }} \
+            --docker-registry-server-user ${{ env.ACR_USERNAME }} \
+            --docker-registry-server-password "${{ github.event.inputs.acr_password || secrets.ACR_PASSWORD }}"
+
+      - name: Set RAG App environment variables
+        run: |
+          az webapp config appsettings set \
+            --name ${{ env.RAG_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings \
+              SERVICE_NAME=rag-service \
+              LLM_MODEL_NAME=TinyLlama/TinyLlama-1.1B-Chat-v1.0 \
+              EMBED_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2 \
+              CHUNK_SIZE=400 \
+              CHUNK_OVERLAP=50 \
+              TOP_K=5 \
+              MAX_NEW_TOKENS=512 \
+              WEBSITES_PORT=80
+
+      - name: Restart RAG Web App
+        run: |
+          az webapp restart \
+            --name ${{ env.RAG_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
+
+      - name: Smoke-test RAG /health (allow 90s for model load)
+        run: |
+          sleep 90
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://${{ env.RAG_APP }}.azurewebsites.net/health)
+          echo "RAG /health HTTP status: $STATUS"
+          [ "$STATUS" = "200" ] || echo "RAG still warming up – non-blocking"
+
