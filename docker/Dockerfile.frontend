@@ -13,11 +13,13 @@ RUN pip install --no-cache-dir streamlit plotly requests pandas python-dotenv
 ENV PORT=${PORT:-8501}
 # Copy application source code
 COPY app.py .
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Streamlit runs on port 8501 by default
 EXPOSE $PORT
 
 # Healthcheck for Azure
 # HEALTHCHECK disabled
-CMD ["sh", "-c", "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"]
+ENTRYPOINT ["/entrypoint.sh"]
 # Duplicate CMD removed
