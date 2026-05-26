@@ -24,6 +24,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 
 # ---------------------------------------------------------------------------
 # Logging

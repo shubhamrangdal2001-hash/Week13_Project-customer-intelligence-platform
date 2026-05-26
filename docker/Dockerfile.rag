@@ -23,6 +23,12 @@ RUN mkdir -p /app/rag/index /app/rag/llm
 RUN useradd -m appuser && chown -R appuser /app
 USER appuser
 
+# Set Hugging Face cache directory to a local path within the app workspace
+ENV HF_HOME=/app/.cache/huggingface
+
+# Pre-download the SentenceTransformer embedding model to avoid startup network delay
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+
 EXPOSE 8001
 
 # ── Start service ──────────────────────────────────────────────────────────

@@ -1,8 +1,14 @@
+import os
 import streamlit as st
 import requests
 import json
 import plotly.graph_objects as go
 import pandas as pd
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 
 # ---------------------------------------------------------------------------
 # Page Configuration
@@ -155,11 +161,16 @@ st.markdown("""
 st.sidebar.image("https://img.icons8.com/color/96/artificial-intelligence.png", width=64)
 st.sidebar.title("Configuration")
 
+# Detect environment: default to Cloud (Azure) if running on Azure, otherwise Local (Development)
+default_env_idx = 1
+if "WEBSITE_HOSTNAME" in os.environ or os.environ.get("ENVIRONMENT") == "production":
+    default_env_idx = 0
+
 # Environment selector
 env = st.sidebar.selectbox(
     "API Environment",
     ["Cloud (Azure)", "Local (Development)"],
-    index=1
+    index=default_env_idx
 )
 
 # API URL setups
@@ -172,7 +183,10 @@ else:
 
 conv_url = st.sidebar.text_input("Conversion Service API", value=default_conv_url)
 rag_url = st.sidebar.text_input("RAG Service API", value=default_rag_url)
-groq_api_key = st.sidebar.text_input("Groq API Key (Optional)", type="password", help="Enables fast cloud LLM generation instead of local model")
+
+# Load Groq API Key from environment or .env if present
+default_groq_api_key = os.getenv("GROQ_API_KEY", "")
+groq_api_key = st.sidebar.text_input("Groq API Key (Optional)", value=default_groq_api_key, type="password", help="Enables fast cloud LLM generation instead of local model")
 
 # Navigation
 st.sidebar.markdown("---")

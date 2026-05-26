@@ -16,6 +16,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+# Load environment variables (e.g., GROQ_API_KEY)
+load_dotenv()
 
 from services.rag.rag_engine import RAGEngine
 
