@@ -172,6 +172,7 @@ else:
 
 conv_url = st.sidebar.text_input("Conversion Service API", value=default_conv_url)
 rag_url = st.sidebar.text_input("RAG Service API", value=default_rag_url)
+groq_api_key = st.sidebar.text_input("Groq API Key (Optional)", type="password", help="Enables fast cloud LLM generation instead of local model")
 
 # Navigation
 st.sidebar.markdown("---")
@@ -420,7 +421,11 @@ elif page == "💬 RAG Resolution Assistant":
         else:
             with st.spinner("Retrieving semantic fragments from FAISS and generating grounded answer..."):
                 try:
-                    payload = {"query": user_query, "top_k": top_k}
+                    payload = {
+                        "query": user_query,
+                        "top_k": top_k,
+                        "groq_api_key": groq_api_key if groq_api_key else None
+                    }
                     rag_res = requests.post(f"{rag_url}/answer", json=payload, timeout=120) # Models can take time
                     
                     if rag_res.status_code == 200:

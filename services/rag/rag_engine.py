@@ -289,7 +289,7 @@ class RAGEngine:
         results = [self._chunks[i] for i in indices[0] if i < len(self._chunks)]
         return results
 
-    def answer(self, query: str, top_k: int = TOP_K) -> RAGResponse:
+    def answer(self, query: str, top_k: int = TOP_K, groq_api_key: Optional[str] = None) -> RAGResponse:
         """
         Retrieve relevant chunks and generate an answer with citations.
 
@@ -319,20 +319,45 @@ class RAGEngine:
             "Answer:"
         )
 
-        inputs = self._tokenizer(prompt, return_tensors="pt").to(self._llm.device)
+        # Check if Groq API key is provided or present in environment
+        api_key = groq_api_key or os.getenv("GROQ_API_KEY")
+        if api_key:
+            import requests
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.2,
+                "max_tokens": MAX_NEW_TOKENS
+            }
+            try:
+                res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=20)
+                if res.status_code == 200:
+                    answer_text = res.json()["choices"][0]["message"]["content"].strip()
+                else:
+                    answer_text = f"Error from Groq API (status code {res.status_code}): {res.text}"
+            except Exception as e:
+                answer_text = f"Error calling Groq API: {e}"
+        else:
+            inputs = self._tokenizer(prompt, return_tensors="pt").to(self._llm.device)
 
-        with torch.no_grad():
-            output_ids = self._llm.generate(
-                **inputs,
-                max_new_tokens=MAX_NEW_TOKENS,
-                temperature=0.2,
-                do_sample=True,
-                pad_token_id=self._tokenizer.eos_token_id,
-            )
+            with torch.no_grad():
+                output_ids = self._llm.generate(
+                    **inputs,
+                    max_new_tokens=MAX_NEW_TOKENS,
+                    temperature=0.2,
+                    do_sample=True,
+                    pad_token_id=self._tokenizer.eos_token_id,
+                )
 
-        # Decode only the newly generated tokens
-        new_tokens = output_ids[0][inputs["input_ids"].shape[1]:]
-        answer_text = self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+            # Decode only the newly generated tokens
+            new_tokens = output_ids[0][inputs["input_ids"].shape[1]:]
+            answer_text = self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
 
         sources = [
             {

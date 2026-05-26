@@ -76,6 +76,7 @@ class AnswerRequest(BaseModel):
         example="What are the most common reasons customers complain about billing?",
     )
     top_k: int = Field(5, ge=1, le=20, description="Number of context chunks to retrieve")
+    groq_api_key: str | None = Field(None, description="Optional Groq API Key to generate answer using Groq cloud")
 
 
 class SourceItem(BaseModel):
@@ -130,7 +131,7 @@ async def answer(request: AnswerRequest) -> AnswerResponse:
         ) from exc
 
     try:
-        result = engine.answer(request.query, top_k=request.top_k)
+        result = engine.answer(request.query, top_k=request.top_k, groq_api_key=request.groq_api_key)
     except Exception as exc:
         log.exception("RAG inference failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
