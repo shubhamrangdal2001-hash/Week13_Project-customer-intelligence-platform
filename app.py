@@ -403,7 +403,7 @@ elif page == "💬 RAG Resolution Assistant":
     st.markdown("""
     <div class="header-container">
         <h1 class="header-title">💬 Complaint Intelligence RAG</h1>
-        <p class="header-subtitle">Search historical complaints and resolve issues using an interactive LLaMA-2 backed QA assistant with citation transparency.</p>
+        <p class="header-subtitle">Search historical complaints and resolve issues using a <strong>Groq-powered</strong> LLM (llama-3.1-8b-instant) with FAISS semantic retrieval and full citation transparency.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -433,14 +433,14 @@ elif page == "💬 RAG Resolution Assistant":
         if len(user_query) < 5:
             st.warning("Please enter a question with at least 5 characters.")
         else:
-            with st.spinner("Retrieving semantic fragments from FAISS and generating grounded answer..."):
+            with st.spinner("Retrieving semantic fragments from FAISS and generating grounded Groq answer..."):
                 try:
                     payload = {
                         "query": user_query,
                         "top_k": top_k,
-                        "groq_api_key": groq_api_key if groq_api_key else None
+                        "model": "llama-3.1-8b-instant"
                     }
-                    rag_res = requests.post(f"{rag_url}/answer", json=payload, timeout=120) # Models can take time
+                    rag_res = requests.post(f"{rag_url}/answer-groq", json=payload, timeout=60)
                     
                     if rag_res.status_code == 200:
                         data = rag_res.json()

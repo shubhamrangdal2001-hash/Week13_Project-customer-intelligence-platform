@@ -163,8 +163,22 @@ class TestRAGEndpoints:
             import services.rag.main as rag_main
             importlib.reload(rag_main)
 
-            from fastapi.testclient import TestClient
-            self.client = TestClient(rag_main.app)
+            import anyio
+            from httpx import AsyncClient, ASGITransport
+
+            class SimpleTestClient:
+                def __init__(self, app, base_url: str = "http://testserver") -> None:
+                    self._client = AsyncClient(transport=ASGITransport(app=app), base_url=base_url)
+                def get(self, url: str, **kwargs):
+                    async def _run():
+                        return await self._client.get(url, **kwargs)
+                    return anyio.run(_run)
+                def post(self, url: str, **kwargs):
+                    async def _run():
+                        return await self._client.post(url, **kwargs)
+                    return anyio.run(_run)
+
+            self.client = SimpleTestClient(rag_main.app)
             yield
             eng.RAGEngine._instance = None
 

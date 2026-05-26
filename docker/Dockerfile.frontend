@@ -10,7 +10,8 @@ WORKDIR /app
 # Copy requirements and install packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-ENV PORT=${PORT:-8501}
+ARG PORT=8501
+ENV PORT=${PORT}
 ENV WEBSITE_HOSTNAME=cip-frontend-13.azurewebsites.net
 ENV CONVERSION_SERVICE_URL=https://cip-app-13.azurewebsites.net
 ENV RAG_SERVICE_URL=https://cip-rag-13.azurewebsites.net
@@ -25,4 +26,3 @@ EXPOSE 8501
 # Healthcheck for Azure
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -f http://localhost:8501 || exit 1
 ENTRYPOINT ["/entrypoint.sh"]
-# Duplicate CMD removed

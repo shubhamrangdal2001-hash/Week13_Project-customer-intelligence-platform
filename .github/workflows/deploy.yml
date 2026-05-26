@@ -215,7 +215,8 @@ jobs:
               TOP_K=5 \
               MAX_NEW_TOKENS=512 \
               WEBSITES_PORT=80 \
-              HF_HOME=/app/.cache/huggingface
+              HF_HOME=/app/.cache/huggingface \
+              GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
 
       - name: Restart RAG Web App
         run: |
@@ -283,3 +284,22 @@ jobs:
           az webapp restart \
             --name ${{ env.FRONTEND_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }}
+
+      - name: Smoke-test Frontend (with polling)
+        run: |
+          TIMEOUT=180
+          INTERVAL=15
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://${{ env.FRONTEND_APP }}.azurewebsites.net)
+            echo "Frontend HTTP status: $STATUS (elapsed: ${ELAPSED}s)"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Frontend is live at https://${{ env.FRONTEND_APP }}.azurewebsites.net"
+              exit 0
+            fi
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          echo "Frontend did not respond 200 within $TIMEOUT seconds"
+          exit 1
