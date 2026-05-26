@@ -11,6 +11,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir streamlit plotly requests pandas python-dotenv
 ENV PORT=${PORT:-8501}
+ENV WEBSITE_HOSTNAME=cip-frontend-13.azurewebsites.net
 # Copy application source code
 COPY app.py .
 COPY entrypoint.sh /entrypoint.sh
