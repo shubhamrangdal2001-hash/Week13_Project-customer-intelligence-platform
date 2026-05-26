@@ -273,16 +273,13 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --settings \
               WEBSITES_PORT=8501 \
-              ENVIRONMENT=production
+              ENVIRONMENT=production \
+              CONVERSION_SERVICE_URL=https://cip-app-13.azurewebsites.net \
+              RAG_SERVICE_URL=https://cip-rag-13.azurewebsites.net \
+              GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
 
       - name: Restart Frontend Web App
         run: |
           az webapp restart \
             --name ${{ env.FRONTEND_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }}
-- name: Ensure Frontend port is configured
-  run: |
-    az webapp config appsettings set \
-      --name ${{ env.FRONTEND_APP }} \
-      --resource-group ${{ env.RESOURCE_GROUP }} \
-      --settings WEBSITES_PORT=8501 ENVIRONMENT=production

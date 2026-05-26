@@ -169,17 +169,17 @@ if "WEBSITE_HOSTNAME" in os.environ or os.environ.get("ENVIRONMENT") == "product
 # Environment selector
 env = st.sidebar.selectbox(
     "API Environment",
-    ["Cloud (Azure)", "Local (Development)"],
+    ["Cloud (Azure)", "(Development)"],
     index=default_env_idx
 )
 
 # API URL setups
 if env == "Cloud (Azure)":
-    default_conv_url = "https://cip-app-13.azurewebsites.net"
-    default_rag_url = "https://cip-rag-13.azurewebsites.net"
+    default_conv_url = os.getenv("CONVERSION_SERVICE_URL", "https://cip-app-13.azurewebsites.net")
+    default_rag_url  = os.getenv("RAG_SERVICE_URL",        "https://cip-rag-13.azurewebsites.net")
 else:
     default_conv_url = "http://localhost:8000"
-    default_rag_url = "http://localhost:8001"
+    default_rag_url  = "http://localhost:8001"
 
 conv_url = st.sidebar.text_input("Conversion Service API", value=default_conv_url)
 rag_url = st.sidebar.text_input("RAG Service API", value=default_rag_url)
