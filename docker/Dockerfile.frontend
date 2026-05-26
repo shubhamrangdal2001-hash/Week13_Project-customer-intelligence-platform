@@ -18,6 +18,6 @@ COPY app.py .
 EXPOSE $PORT
 
 # Healthcheck for Azure
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -f http://localhost:$PORT/_stcore/health || exit 1
+# HEALTHCHECK disabled
 CMD ["sh", "-c", "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"]
 # Duplicate CMD removed
