@@ -12,6 +12,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ── Application code ───────────────────────────────────────────────────────
+# Copy the top-level services package init so Python resolves the package correctly
+COPY services/__init__.py ./services/__init__.py
 COPY services/rag/ ./services/rag/
 COPY monitoring/ ./monitoring/
 COPY data/complaints/ ./data/complaints/
@@ -28,6 +30,10 @@ ENV HF_HOME=/app/.cache/huggingface
 
 # Pre-download the SentenceTransformer embedding model to avoid startup network delay
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+
+# ── Health check (Azure uses this to detect container readiness) ───────────
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-80}/health || exit 1
 
 # Azure App Service routes port 80/443 — RAG listens on 80 for cloud deploy
 EXPOSE 80
