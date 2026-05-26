@@ -54,3 +54,26 @@ services:
     # Llama 2 is memory-heavy; request extra memory if available
     mem_limit: 8g
     shm_size: 512m
+
+  # ── Streamlit Frontend Web App ──────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    image: weel13-frontend:latest
+    container_name: weel13_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - PORT=8501
+      - CONVERSION_SERVICE_URL=http://conversion:8000
+      - RAG_SERVICE_URL=http://rag:8001
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - ENVIRONMENT=local
+    depends_on:
+      conversion:
+        condition: service_healthy
+      rag:
+        condition: service_healthy
+    restart: unless-stopped
+
