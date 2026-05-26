@@ -17,5 +17,7 @@ COPY app.py .
 # Streamlit runs on port 8501 by default
 EXPOSE $PORT
 
-# Command to run streamlit
+# Healthcheck for Azure
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -f http://localhost:$PORT/_stcore/health || exit 1
 CMD ["sh", "-c", "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"]
+# Duplicate CMD removed
