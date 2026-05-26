@@ -85,7 +85,25 @@ Please review the `docs/` directory for full technical reports justifying these 
 - [RAG Report](docs/rag_report.md)
 - [Monitoring Report](docs/monitoring_report.md)
 
-## Quick Start
+## Frontend
+
+You can run the Streamlit UI locally or via Docker.
+
+**Local (Windows)**
+```bat
+frontend_start.bat
+```
+This will launch the app on `http://localhost:8501`.
+
+**Docker**
+```bash
+docker build -f docker/Dockerfile.frontend -t cip-frontend .
+docker run -p 8501:8501 cip-frontend
+```
+The container uses the same `requirements.txt` and starts via the provided `entrypoint.sh`.
+
+---
+
 
 1. Generate Sample Data:
 ```bash
@@ -100,3 +118,77 @@ python services/conversion/train.py
 ```bash
 docker-compose up --build
 ```
+
+---
+
+## Deployed Services on Azure
+
+| # | Service | URL | Status | Notes |
+|---|---|---|---|---|
+| 1 | ⚙️ Conversion API | [https://cip-app-13.azurewebsites.net](https://cip-app-13.azurewebsites.net) | ✅ 200 | XGBoost /predict, /batch-score, /customer-intel |
+| 2 | 💬 RAG API | [https://cip-rag-13.azurewebsites.net](https://cip-rag-13.azurewebsites.net) | ✅ 200 | FAISS + Groq /answer endpoint |
+| 3 | 🆕 Frontend V2 (new link) | [https://cip-frontend-v2-13.azurewebsites.net](https://cip-frontend-v2-13.azurewebsites.net) | ✅ 200 | Updated RAG call, Groq-powered |
+
+### Azure Deployment Commands
+
+The infrastructure can be provisioned and deployed using Azure CLI commands or helper scripts.
+
+#### 1. Interactive CLI Login
+To authenticate with Azure:
+```bash
+az login --use-device-code
+```
+
+#### 2. Provisioning & Initial Deployment
+You can use the PowerShell provisioning script for setting up the RAG service:
+```powershell
+.\infra\provision_rag.ps1
+```
+Or run the deployment script for the conversion/RAG multi-container stack:
+```bash
+bash infra/azure_deploy.sh
+```
+
+#### 3. Continuous Deployment (CI/CD)
+The deployment is automated via GitHub Actions on every push to the `main` branch. 
+To deploy changes, push to GitHub:
+```bash
+git add .
+git commit -m "Deploy update"
+git push origin main
+```
+
+#### 4. Manual Deployment & Updates
+If you need to manually configure registry credentials, update settings, or restart specific web apps:
+
+**Retrieve Container Registry Credentials:**
+```bash
+az acr credential show --name cipregistry13 --query "passwords[0].value" --output tsv
+```
+
+**Deploy/Configure a Single Container Web App:**
+```bash
+# 1. Update the container image
+az webapp config container set \
+  --name cip-rag-13 \
+  --resource-group cip-rg-13 \
+  --docker-custom-image-name cipregistry13.azurecr.io/weel13-rag-azure:latest \
+  --docker-registry-server-url https://cipregistry13.azurecr.io \
+  --docker-registry-server-user cipregistry13 \
+  --docker-registry-server-password <ACR_PASSWORD>
+
+# 2. Configure app settings (e.g. for Frontend V2)
+az webapp config appsettings set \
+  --name cip-frontend-v2-13 \
+  --resource-group cip-rg-13 \
+  --settings \
+    WEBSITES_PORT=8501 \
+    ENVIRONMENT=production \
+    CONVERSION_SERVICE_URL=https://cip-app-13.azurewebsites.net \
+    RAG_SERVICE_URL=https://cip-rag-13.azurewebsites.net \
+    GROQ_API_KEY=<GROQ_API_KEY>
+
+# 3. Restart the web app to apply changes
+az webapp restart --name cip-frontend-v2-13 --resource-group cip-rg-13
+```
+
