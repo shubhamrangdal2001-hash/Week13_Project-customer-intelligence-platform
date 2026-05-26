@@ -19,8 +19,10 @@ ENV/
 # Data and Models
 models/
 !models/.gitkeep
-data/
-!data/*/.gitkeep
+data/campaign/
+data/complaints/.gitkeep
+# Allow complaint documents — needed for Docker build on GitHub Actions
+!data/complaints/*.txt
 
 # IDEs
 .idea/
