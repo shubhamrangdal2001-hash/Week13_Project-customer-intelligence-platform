@@ -10,12 +10,12 @@ WORKDIR /app
 # Copy requirements and install packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir streamlit plotly requests pandas python-dotenv
-
+ENV PORT=${PORT:-8501}
 # Copy application source code
 COPY app.py .
 
 # Streamlit runs on port 8501 by default
-EXPOSE 8501
+EXPOSE $PORT
 
 # Command to run streamlit
-CMD ["streamlit", "run", "app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+CMD ["sh", "-c", "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"]
