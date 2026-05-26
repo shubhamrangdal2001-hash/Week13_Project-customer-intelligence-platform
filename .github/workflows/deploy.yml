@@ -280,4 +280,9 @@ jobs:
           az webapp restart \
             --name ${{ env.FRONTEND_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }}
-
+- name: Ensure Frontend port is configured
+  run: |
+    az webapp config appsettings set \
+      --name ${{ env.FRONTEND_APP }} \
+      --resource-group ${{ env.RESOURCE_GROUP }} \
+      --settings WEBSITES_PORT=8501 ENVIRONMENT=production
