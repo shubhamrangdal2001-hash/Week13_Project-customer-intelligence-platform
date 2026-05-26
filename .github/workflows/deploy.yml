@@ -13,6 +13,7 @@ env:
   CONVERSION_APP:   cip-app-13
   RAG_APP:          cip-rag-13
   FRONTEND_APP:     cip-frontend-13
+  FRONTEND_APP_V2:  cip-frontend-v2-13
   LOCATION:         centralindia
 
 jobs:
@@ -302,4 +303,76 @@ jobs:
             ELAPSED=$((ELAPSED + INTERVAL))
           done
           echo "Frontend did not respond 200 within $TIMEOUT seconds"
+          exit 1
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 5. DEPLOY FRONTEND V2 (NEW LINK)  →  cip-frontend-v2-13.azurewebsites.net
+  #    Uses /answer-groq RAG endpoint + Groq server-side key
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy-frontend-v2:
+    name: Deploy Frontend V2 (New Link – Groq RAG)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Frontend V2 Web App (idempotent)
+        run: |
+          az webapp create \
+            --name ${{ env.FRONTEND_APP_V2 }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --plan ${{ env.APP_PLAN }} \
+            --deployment-container-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:latest \
+            2>/dev/null || true
+
+      - name: Configure Frontend V2 container
+        run: |
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_USERNAME }} --query "passwords[0].value" --output tsv)
+          az webapp config container set \
+            --name ${{ env.FRONTEND_APP_V2 }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --docker-custom-image-name ${{ env.ACR_LOGIN_SERVER }}/weel13-frontend:latest \
+            --docker-registry-server-url https://${{ env.ACR_LOGIN_SERVER }} \
+            --docker-registry-server-user ${{ env.ACR_USERNAME }} \
+            --docker-registry-server-password "$ACR_PASSWORD"
+
+      - name: Set Frontend V2 environment variables
+        run: |
+          az webapp config appsettings set \
+            --name ${{ env.FRONTEND_APP_V2 }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings \
+              WEBSITES_PORT=8501 \
+              ENVIRONMENT=production \
+              CONVERSION_SERVICE_URL=https://cip-app-13.azurewebsites.net \
+              RAG_SERVICE_URL=https://cip-rag-13.azurewebsites.net \
+              GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+
+      - name: Restart Frontend V2 Web App
+        run: |
+          az webapp restart \
+            --name ${{ env.FRONTEND_APP_V2 }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
+
+      - name: Smoke-test Frontend V2 (with polling)
+        run: |
+          TIMEOUT=180
+          INTERVAL=15
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://${{ env.FRONTEND_APP_V2 }}.azurewebsites.net)
+            echo "Frontend V2 HTTP status: $STATUS (elapsed: ${ELAPSED}s)"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Frontend V2 is live at https://${{ env.FRONTEND_APP_V2 }}.azurewebsites.net"
+              exit 0
+            fi
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          echo "Frontend V2 did not respond 200 within $TIMEOUT seconds"
           exit 1
