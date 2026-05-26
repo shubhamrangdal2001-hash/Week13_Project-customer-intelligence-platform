@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Copy requirements and install packages
 COPY requirements.txt .
-RUN pip install --no-cache-dir streamlit plotly requests pandas
+RUN pip install --no-cache-dir streamlit plotly requests pandas python-dotenv
 
 # Copy application source code
 COPY app.py .
