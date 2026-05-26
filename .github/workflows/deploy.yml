@@ -147,13 +147,24 @@ jobs:
             --name ${{ env.CONVERSION_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }}
 
-      - name: Smoke-test Conversion /health
+      - name: Smoke-test Conversion /health (with polling)
         run: |
-          sleep 30
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://${{ env.CONVERSION_APP }}.azurewebsites.net/health)
-          echo "Conversion /health HTTP status: $STATUS"
-          [ "$STATUS" = "200" ] || exit 1
+          TIMEOUT=180
+          INTERVAL=10
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://${{ env.CONVERSION_APP }}.azurewebsites.net/health)
+            echo "Conversion /health HTTP status: $STATUS (elapsed: ${ELAPSED}s)"
+            if [ "$STATUS" = "200" ]; then
+              echo "Conversion service is healthy!"
+              exit 0
+            fi
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          echo "Conversion service failed to become healthy within $TIMEOUT seconds"
+          exit 1
 
   # ──────────────────────────────────────────────────────────────────────────
   # 3. DEPLOY RAG SERVICE  →  cip-rag-13.azurewebsites.net  (Stretch goal)
