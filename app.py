@@ -433,20 +433,39 @@ elif page == "💬 RAG Resolution Assistant":
         if len(user_query) < 5:
             st.warning("Please enter a question with at least 5 characters.")
         else:
-            with st.spinner("Retrieving semantic fragments from FAISS and generating grounded Groq answer..."):
+            with st.spinner("Retrieving semantic fragments from FAISS and generating grounded answer..."):
                 try:
-                    payload = {
+                    # ── Try /answer-groq first (fast Groq cloud LLM, server-side key) ──
+                    groq_payload = {
                         "query": user_query,
                         "top_k": top_k,
                         "model": "llama-3.1-8b-instant"
                     }
-                    rag_res = requests.post(f"{rag_url}/answer-groq", json=payload, timeout=60)
-                    
+                    rag_res = requests.post(f"{rag_url}/answer-groq", json=groq_payload, timeout=60)
+
+                    # ── Fallback to /answer if RAG service doesn't support /answer-groq yet ──
+                    if rag_res.status_code == 404:
+                        fallback_payload = {
+                            "query": user_query,
+                            "top_k": top_k,
+                            "groq_api_key": groq_api_key if groq_api_key else None
+                        }
+                        rag_res = requests.post(f"{rag_url}/answer", json=fallback_payload, timeout=90)
+                        used_groq_endpoint = False
+                    else:
+                        used_groq_endpoint = True
+
                     if rag_res.status_code == 200:
                         data = rag_res.json()
                         answer = data["answer"]
                         sources = data["sources"]
-                        
+
+                        # Show which backend mode was used
+                        if used_groq_endpoint:
+                            st.caption("⚡ Powered by **Groq** `llama-3.1-8b-instant` via `/answer-groq`")
+                        else:
+                            st.caption("🔄 Using `/answer` endpoint (RAG service updating — Groq fallback active)")
+
                         # Render Answer
                         st.subheader("🤖 Generated Answer")
                         st.markdown(f"""
@@ -454,7 +473,7 @@ elif page == "💬 RAG Resolution Assistant":
                             {answer}
                         </div>
                         """, unsafe_allow_html=True)
-                        
+
                         # Render Citations / Sources
                         st.subheader("📄 Grounded Sources / Citations")
                         if sources:
@@ -468,9 +487,9 @@ elif page == "💬 RAG Resolution Assistant":
                                     """, unsafe_allow_html=True)
                         else:
                             st.info("⚠️ No sources cited. The system generated this answer independently, or it is a refusal due to low similarity scores.")
-                            
+
                     else:
-                        st.error(f"Error from RAG Service. Code: {rag_res.status_code}")
+                        st.error(f"Error from RAG Service. Code: {rag_res.status_code} — {rag_res.text[:200]}")
                 except Exception as ex:
                     st.error(f"Could not connect to RAG API at {rag_url}. Details: {ex}")
                     
